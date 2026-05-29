@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jogo de Frações - A Toupeira Matemática</title>
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght=400;700;800&display=swap" rel="stylesheet">
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Estilos Customizados (Gradientes e Animações complexas que o Tailwind não cobre nativamente) -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-[#1A0A00] flex items-center justify-center min-h-screen font-['Nunito'] antialiased">
+
+<div id="game" class="relative w-[680px] max-w-full min-h-[520px] rounded-2xl overflow-hidden p-0 select-none bg-gradient-to-b from-[#8B5A2B] to-[#6B3A1A]">
+  
+  <!-- Elementos de Decoração de Fundo -->
+  <div class="sky-bg absolute bottom-0 left-0 right-0 h-[140px] rounded-b-2xl"></div>
+  <div class="dirt-overlay absolute bottom-0 left-0 right-0 h-[220px] bg-[#6B3A1A]"></div>
+  <div class="worm-deco absolute text-base opacity-60 z-[6] bottom-[155px] left-[200px]">🪱</div>
+  <div class="worm-deco absolute text-[12px] opacity-60 z-[6] bottom-[165px] right-[110px]">Bone</div>
+  <div class="rock-deco absolute bottom-[120px] right-[14px] text-[28px] opacity-50 z-[5]">🪨</div>
+
+  <!-- Seção do Mascote (Toupeira) --> 
+  <div class="mole-section absolute z-[8] bottom-[15px] left-[10px] w-[80px]">
+    <img id="mole" src="/components/img/topeira.png" alt="Silas" class="w-[130px] max-w-none drop-shadow-[2px_2px_4px_rgba(0,0,0,0.5)] transition-transform duration-300">
+  </div>
+
+  <!-- Barra Superior de Status -->
+  <div class="top-bar relative z-10 flex items-center justify-between px-4 pt-[10px] pb-[6px]">
+    <div class="phase-map flex gap-1 items-center" id="phase-map"></div>
+    <div class="phase-title flex-1 text-center font-['Fredoka_One'] text-[#FFD700] text-[17px] drop-shadow-[2px_2px_0_#8B4500]" id="phase-title">
+      FASE 1: Preencha exatamente 3/4 do túnel!
+    </div>
+    <div class="flex flex-col items-end gap-1">
+      <div class="lives flex gap-1 text-[20px]" id="lives"></div>
+      <div class="score-badge bg-[#FFD700] color-[#4A1A00] font-['Fredoka_One'] text-[13px] px-[10px] py-[3px] rounded-2xl border-2 border-[#8B5A00]">
+        ⭐ <span id="score">0</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Barra de Progresso -->
+  <div class="progress-bar-wrap relative z-10 mx-4 mb-2 bg-[#3A1A00] rounded-2xl h-[22px] border-3 border-[#FFD700] overflow-hidden">
+    <div class="progress-bar-fill h-full bg-gradient-to-r from-[#00D4AA] to-[#00FFC8] rounded-2xl transition-[width] duration-500 ease-out relative" id="progress-fill" style="width:0%"></div>
+    <div class="progress-label absolute right-2 top-1/2 -translate-y-1/2 text-[12px] font-extrabold text-white drop-shadow-[1px_1px_0_#000] z-10" id="progress-label">0%</div>
+  </div>
+
+  <!-- Área do Túnel -->
+  <div class="tunnel-area relative z-10 mx-4 mb-2 bg-[#2A0D00] rounded-xl h-[90px] border-4 border-[#8B5A2B] flex items-center overflow-hidden shadow-[inset_0_4px_12px_rgba(0,0,0,0.8)]">
+    <div class="tunnel-slots flex w-full h-full p-[6px] gap-1" id="tunnel-slots"></div>
+  </div>
+
+  <!-- Inventário de Peças -->
+  <div class="inventory-area relative z-10 mx-4 mb-2 bg-[#4A2000] rounded-xl border-3 border-[#8B5A2B] p-2">
+    <div class="inventory-title text-[11px] font-extrabold text-[#FFB84C] text-center tracking-wider mb-[6px]">
+      INVENTÁRIO DE PEÇAS DE TERRA
+    </div>
+    <div class="inventory-slots flex gap-[6px] justify-center flex-wrap" id="inventory-slots"></div>
+  </div>
+
+  <!-- Barra Inferior de Dicas e Ação -->
+  <div class="bottom-bar relative z-10 flex items-center justify-between px-4 pb-[10px] gap-2">
+    <div class="hint-box flex-1 bg-[rgba(0,0,0,0.4)] rounded-pt-10 rounded-xl p-[6px_10px] text-[12px] text-[#FFE0A0] leading-relaxed border border-[rgba(255,184,76,0.3)]" id="hint-box">
+      👆 Clique em uma peça e depois no túnel para colocá-la!
+    </div>
+    <button class="dig-btn bg-gradient-to-b from-[#FFD700] to-[#FF9500] border-4 border-[#8B4500] rounded-2xl p-[8px_16px] font-['Fredoka_One'] text-[15px] text-[#4A1A00] cursor-pointer shadow-[0_5px_0_#5A3000,0_6px_8px_rgba(0,0,0,0.4)] transition-all duration-150 active:translate-y-[3px] active:shadow-[0_2px_0_#5A3000] hover:from-[#FFE040] hover:to-[#FFB020] flex items-center gap-[6px] whitespace-nowrap" id="dig-btn" onclick="checkAnswer()">
+      ⛏️ CAVAR!
+    </button>
+  </div>
+
+  <!-- Tela de Feedback (Overlay) -->
+  <div class="feedback-overlay absolute inset-0 z-30 flex flex-col items-center justify-center bg-[rgba(0,0,0,0.7)] rounded-2xl opacity-0 pointer-events-none transition-opacity duration-300" id="feedback-overlay">
+    <div class="feedback-card bg-[#5A2A00] border-4 border-[#FFD700] rounded-[20px] p-[24px_32px] text-center max-w-[320px]">
+      <div class="feedback-emoji text-[52px] mb-[10px]" id="fb-emoji">🎉</div>
+      <div class="feedback-title font-['Fredoka_One'] text-[26px] text-[#FFD700] drop-shadow-[2px_2px_0_#8B4500] mb-2" id="fb-title">Incrível!</div>
+      <div class="feedback-msg text-[14px] text-[#FFE0A0] mb-4罩 leading-relaxed whitespace-pre-line" id="fb-msg"></div>
+      <button class="next-btn bg-gradient-to-b from-[#44CC44] to-[#228822] border-3 border-[#006600] rounded-xl p-[10px_28px] font-['Fredoka_One'] text-[17px] text-white cursor-pointer shadow-[0_4px_0_#004400] transition-all duration-150 active:translate-y-[2px] active:shadow-[0_2px_0_#004400] hover:from-[#55DD55] hover:to-[#33AA33]" id="next-btn" onclick="nextPhase()">
+        PRÓXIMA FASE →
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Importação do arquivo de scripts separado -->
+<script src="script.js"></script>
+</body>
+</html>
