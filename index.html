@@ -1,89 +1,289 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Jogo de Frações - A Toupeira Matemática</title>
-  <!-- Google Fonts -->
-  <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght=400;700;800&display=swap" rel="stylesheet">
-  <!-- Tailwind CSS -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Estilos Customizados (Gradientes e Animações complexas que o Tailwind não cobre nativamente) -->
+  <title>FractionQuest — A Aventura das Frações | TCC Matemática</title>
+  <meta name="description"
+    content="Jogo educativo de frações com gamificação completa. Aprenda frações de forma divertida com o Silas, a toupeira matemática!">
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&display=swap"
+    rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
-<body class="bg-[#1A0A00] flex items-center justify-center min-h-screen font-['Nunito'] antialiased">
 
-<div id="game" class="relative w-[680px] max-w-full min-h-[520px] rounded-2xl overflow-hidden p-0 select-none bg-gradient-to-b from-[#8B5A2B] to-[#6B3A1A]">
-  
-  <!-- Elementos de Decoração de Fundo -->
-  <div class="sky-bg absolute bottom-0 left-0 right-0 h-[140px] rounded-b-2xl"></div>
-  <div class="dirt-overlay absolute bottom-0 left-0 right-0 h-[220px] bg-[#6B3A1A]"></div>
-  <div class="worm-deco absolute text-base opacity-60 z-[6] bottom-[155px] left-[200px]">🪱</div>
-  <div class="worm-deco absolute text-[12px] opacity-60 z-[6] bottom-[165px] right-[110px]">Bone</div>
-  <div class="rock-deco absolute bottom-[120px] right-[14px] text-[28px] opacity-50 z-[5]">🪨</div>
+<body>
 
-  <!-- Seção do Mascote (Toupeira) --> 
-  <div class="mole-section absolute z-[8] bottom-[15px] left-[10px] w-[80px]">
-    <img id="mole" src="/components/img/topeira.png" alt="Silas" class="w-[130px] max-w-none drop-shadow-[2px_2px_4px_rgba(0,0,0,0.5)] transition-transform duration-300">
+  <!-- Canvas de Partículas -->
+  <canvas id="particle-canvas"></canvas>
+
+  <!-- ===================== TELA 1: INTRO ===================== -->
+  <div id="screen-intro" class="screen active">
+    <div class="intro-bg">
+      <div class="star-field" id="star-field"></div>
+      <div class="ground-strip"></div>
+      <div class="dirt-hills"></div>
+    </div>
+
+    <div class="intro-card">
+      <div class="intro-badge">🎓 TCC MATEMÁTICA</div>
+      <div class="intro-logo">
+        <span class="logo-frac">
+          <span class="logo-num">1</span>
+          <span class="logo-bar"></span>
+          <span class="logo-den">2</span>
+        </span>
+        <h1 class="logo-title">FractionQuest</h1>
+      </div>
+      <p class="intro-subtitle">A Grande Aventura das Frações!</p>
+
+      <div class="mascot-intro-wrap">
+        <img src="components/img/topeira.png" alt="Silas a Toupeira" class="mascot-intro-img" id="mascot-intro">
+        <div class="mascot-bubble" id="intro-bubble">
+          Olá! Sou o <strong>Silas</strong>! 🐾<br>
+          Vamos aprender frações juntos?
+        </div>
+      </div>
+
+      <div class="intro-features">
+        <div class="feat-item">🏆 <span>Sistema de XP</span></div>
+        <div class="feat-item">🎖️ <span>Conquistas</span></div>
+        <div class="feat-item">🔥 <span>Combos</span></div>
+        <div class="feat-item">⭐ <span>3 Estrelas</span></div>
+      </div>
+
+      <button class="btn-play" id="btn-play" onclick="goToMap()">
+        <span>⛏️ COMEÇAR AVENTURA</span>
+      </button>
+
+      <div class="intro-footer">Feito por Elecktron</div>
+    </div>
   </div>
 
-  <!-- Barra Superior de Status -->
-  <div class="top-bar relative z-10 flex items-center justify-between px-4 pt-[10px] pb-[6px]">
-    <div class="phase-map flex gap-1 items-center" id="phase-map"></div>
-    <div class="phase-title flex-1 text-center font-['Fredoka_One'] text-[#FFD700] text-[17px] drop-shadow-[2px_2px_0_#8B4500]" id="phase-title">
-      FASE 1: Preencha exatamente 3/4 do túnel!
+  <!-- ===================== TELA 2: MAPA DE FASES ===================== -->
+  <div id="screen-map" class="screen">
+    <div class="map-header">
+      <button class="btn-back" onclick="goToIntro()">← Voltar</button>
+      <div class="map-title">🗺️ Mapa da Aventura</div>
+      <div class="map-stats">
+        <div class="stat-chip">⭐ <span id="map-score">0</span></div>
+        <div class="stat-chip level-chip">Nv <span id="map-level">1</span></div>
+      </div>
     </div>
-    <div class="flex flex-col items-end gap-1">
-      <div class="lives flex gap-1 text-[20px]" id="lives"></div>
-      <div class="score-badge bg-[#FFD700] color-[#4A1A00] font-['Fredoka_One'] text-[13px] px-[10px] py-[3px] rounded-2xl border-2 border-[#8B5A00]">
-        ⭐ <span id="score">0</span>
+
+    <!-- Barra de XP Global -->
+    <div class="xp-bar-wrap">
+      <div class="xp-label">XP: <span id="xp-current">0</span> / <span id="xp-next">100</span></div>
+      <div class="xp-track">
+        <div class="xp-fill" id="xp-fill" style="width:0%"></div>
+        <div class="xp-shine"></div>
+      </div>
+    </div>
+
+    <!-- Grade de Fases -->
+    <div class="phases-grid" id="phases-grid"></div>
+
+    <!-- Conquistas no Mapa -->
+    <div class="achievements-row" id="achievements-row">
+      <div class="ach-title">🎖️ Conquistas</div>
+      <div class="ach-list" id="ach-list"></div>
+    </div>
+  </div>
+
+  <!-- ===================== TELA 3: JOGO ===================== -->
+  <div id="screen-game" class="screen">
+
+    <!-- HUD Superior -->
+    <div class="game-hud">
+      <button class="btn-back-sm" onclick="goToMap()">← Mapa</button>
+      <div class="hud-center">
+        <div class="phase-label" id="hud-phase-label">FASE 1</div>
+        <div class="phase-title-txt" id="hud-phase-title">Preencha 3/4 do túnel!</div>
+      </div>
+      <div class="hud-right">
+        <div class="lives-row" id="lives-row"></div>
+        <div class="score-hud">⭐ <span id="hud-score">0</span></div>
+      </div>
+    </div>
+
+    <!-- Combo -->
+    <div class="timer-combo-bar combo-only">
+      <div class="combo-badge" id="combo-badge">
+        🔥 COMBO x<span id="combo-count">1</span>
+      </div>
+    </div>
+
+    <!-- Área Principal do Jogo -->
+    <div class="game-scene">
+      <!-- Fundo da cena -->
+      <div class="scene-sky"></div>
+      <div class="scene-dirt"></div>
+
+      <!-- Mascote -->
+      <div class="mascot-game-wrap">
+        <img src="components/img/topeira.png" alt="Silas" class="mascot-game" id="mascot-game">
+        <div class="mascot-dialog" id="mascot-dialog">
+          💡 Dica: Preencha o túnel com as peças!
+        </div>
+      </div>
+
+      <!-- Barra de Progresso do Túnel -->
+      <div class="progress-section">
+        <div class="progress-label-top">
+          Progresso: <span id="prog-fraction">0</span> / <span class="prog-target" id="prog-target">3/4</span>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill" id="progress-fill" style="width:0%">
+            <div class="progress-shine"></div>
+          </div>
+          <div class="progress-marker" id="progress-marker"></div>
+          <div class="progress-pct" id="progress-pct">0%</div>
+        </div>
+      </div>
+
+      <!-- Área do Túnel -->
+      <div class="tunnel-wrap">
+        <div class="tunnel-label">🕳️ TÚNEL</div>
+        <div class="tunnel-slots" id="tunnel-slots"></div>
+        <div class="tunnel-glow"></div>
+      </div>
+
+      <!-- Inventário -->
+      <div class="inventory-wrap">
+        <div class="inventory-label">🎒 PEÇAS DISPONÍVEIS</div>
+        <div class="inventory-slots" id="inventory-slots"></div>
+      </div>
+
+      <!-- Barra de Ação -->
+      <div class="action-bar">
+        <div class="hint-box" id="hint-box">
+          👆 Selecione uma peça e coloque no túnel!
+        </div>
+        <div class="action-btns">
+          <button class="btn-clear" onclick="resetTunnel()" title="Limpar túnel">🗑️</button>
+          <button class="btn-dig" id="btn-dig" onclick="checkAnswer()">⛏️ CAVAR!</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== OVERLAYS ===== -->
+
+    <!-- Overlay: Acerto -->
+    <div class="overlay" id="overlay-correct">
+      <div class="overlay-card success-card">
+        <div class="overlay-emoji" id="ov-emoji">🎉</div>
+        <div class="overlay-title" id="ov-title">Incrível!</div>
+        <div class="overlay-msg" id="ov-msg"></div>
+        <div class="stars-display" id="stars-display"></div>
+        <div class="points-gained" id="points-gained"></div>
+        <div class="achievement-unlocked" id="achievement-unlocked" style="display:none">
+          <div class="ach-popup-title">🎖️ CONQUISTA DESBLOQUEADA!</div>
+          <div class="ach-popup-name" id="ach-popup-name"></div>
+        </div>
+        <button class="btn-next" id="btn-next" onclick="nextPhase()">PRÓXIMA FASE →</button>
+      </div>
+    </div>
+
+    <!-- Overlay: Erro / Game Over -->
+    <div class="overlay" id="overlay-fail">
+      <div class="overlay-card fail-card">
+        <div class="overlay-emoji">😢</div>
+        <div class="overlay-title">Que pena...</div>
+        <div class="overlay-msg" id="fail-msg">Você perdeu todas as vidas!</div>
+        <button class="btn-retry" onclick="resetPhase()">🔄 TENTAR DE NOVO</button>
+      </div>
+    </div>
+
+
+  </div>
+
+  <!-- ===================== TELA 4: QUIZ ===================== -->
+  <div id="screen-quiz" class="screen">
+    <div class="quiz-header">
+      <button class="btn-back" onclick="skipQuiz()">← Pular</button>
+      <div class="quiz-title">🧠 MINI QUIZ DE FRAÇÕES</div>
+      <div class="quiz-progress-txt" id="quiz-progress-txt">Pergunta 1 / 3</div>
+    </div>
+
+    <div class="quiz-body">
+      <div class="quiz-mascot-row">
+        <img src="components/img/topeira.png" alt="Silas" class="quiz-mascot">
+        <div class="quiz-question-bubble" id="quiz-question">
+          Qual é o resultado de 1/4 + 1/4?
+        </div>
+      </div>
+
+      <div class="quiz-options" id="quiz-options"></div>
+
+      <div class="quiz-feedback" id="quiz-feedback" style="display:none"></div>
+
+      <div class="quiz-xp-bar-wrap">
+        <div class="quiz-xp-label">Progresso do Quiz</div>
+        <div class="quiz-xp-track">
+          <div class="quiz-xp-fill" id="quiz-xp-fill" style="width:0%"></div>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- Barra de Progresso -->
-  <div class="progress-bar-wrap relative z-10 mx-4 mb-2 bg-[#3A1A00] rounded-2xl h-[22px] border-3 border-[#FFD700] overflow-hidden">
-    <div class="progress-bar-fill h-full bg-gradient-to-r from-[#00D4AA] to-[#00FFC8] rounded-2xl transition-[width] duration-500 ease-out relative" id="progress-fill" style="width:0%"></div>
-    <div class="progress-label absolute right-2 top-1/2 -translate-y-1/2 text-[12px] font-extrabold text-white drop-shadow-[1px_1px_0_#000] z-10" id="progress-label">0%</div>
-  </div>
-
-  <!-- Área do Túnel -->
-  <div class="tunnel-area relative z-10 mx-4 mb-2 bg-[#2A0D00] rounded-xl h-[90px] border-4 border-[#8B5A2B] flex items-center overflow-hidden shadow-[inset_0_4px_12px_rgba(0,0,0,0.8)]">
-    <div class="tunnel-slots flex w-full h-full p-[6px] gap-1" id="tunnel-slots"></div>
-  </div>
-
-  <!-- Inventário de Peças -->
-  <div class="inventory-area relative z-10 mx-4 mb-2 bg-[#4A2000] rounded-xl border-3 border-[#8B5A2B] p-2">
-    <div class="inventory-title text-[11px] font-extrabold text-[#FFB84C] text-center tracking-wider mb-[6px]">
-      INVENTÁRIO DE PEÇAS DE TERRA
+  <!-- ===================== TELA 5: RESULTADO FINAL ===================== -->
+  <div id="screen-result" class="screen">
+    <div class="result-bg">
+      <div class="result-stars-bg" id="result-stars-bg"></div>
     </div>
-    <div class="inventory-slots flex gap-[6px] justify-center flex-wrap" id="inventory-slots"></div>
-  </div>
+    <div class="result-card">
+      <div class="result-trophy">🏆</div>
+      <h2 class="result-title">Aventura Completa!</h2>
+      <div class="result-score-big">
+        <span id="result-score">0</span>
+        <span class="result-score-label">pontos</span>
+      </div>
 
-  <!-- Barra Inferior de Dicas e Ação -->
-  <div class="bottom-bar relative z-10 flex items-center justify-between px-4 pb-[10px] gap-2">
-    <div class="hint-box flex-1 bg-[rgba(0,0,0,0.4)] rounded-pt-10 rounded-xl p-[6px_10px] text-[12px] text-[#FFE0A0] leading-relaxed border border-[rgba(255,184,76,0.3)]" id="hint-box">
-      👆 Clique em uma peça e depois no túnel para colocá-la!
+      <div class="result-stats">
+        <div class="rst-item">
+          <div class="rst-icon">⭐</div>
+          <div class="rst-val" id="result-stars-total">0</div>
+          <div class="rst-label">Estrelas</div>
+        </div>
+        <div class="rst-item">
+          <div class="rst-icon">🏅</div>
+          <div class="rst-val" id="result-level">1</div>
+          <div class="rst-label">Nível</div>
+        </div>
+        <div class="rst-item">
+          <div class="rst-icon">🔥</div>
+          <div class="rst-val" id="result-max-combo">1x</div>
+          <div class="rst-label">Max Combo</div>
+        </div>
+      </div>
+
+      <div class="result-achievements">
+        <div class="ra-title">🎖️ Conquistas Obtidas</div>
+        <div class="ra-list" id="result-ach-list"></div>
+      </div>
+
+      <div class="result-grade">
+        <div class="grade-label">Desempenho:</div>
+        <div class="grade-value" id="result-grade-val">Excelente! 🌟</div>
+      </div>
+
+      <button class="btn-play-again" onclick="restartGame()">🔄 JOGAR NOVAMENTE</button>
     </div>
-    <button class="dig-btn bg-gradient-to-b from-[#FFD700] to-[#FF9500] border-4 border-[#8B4500] rounded-2xl p-[8px_16px] font-['Fredoka_One'] text-[15px] text-[#4A1A00] cursor-pointer shadow-[0_5px_0_#5A3000,0_6px_8px_rgba(0,0,0,0.4)] transition-all duration-150 active:translate-y-[3px] active:shadow-[0_2px_0_#5A3000] hover:from-[#FFE040] hover:to-[#FFB020] flex items-center gap-[6px] whitespace-nowrap" id="dig-btn" onclick="checkAnswer()">
-      ⛏️ CAVAR!
-    </button>
   </div>
 
-  <!-- Tela de Feedback (Overlay) -->
-  <div class="feedback-overlay absolute inset-0 z-30 flex flex-col items-center justify-center bg-[rgba(0,0,0,0.7)] rounded-2xl opacity-0 pointer-events-none transition-opacity duration-300" id="feedback-overlay">
-    <div class="feedback-card bg-[#5A2A00] border-4 border-[#FFD700] rounded-[20px] p-[24px_32px] text-center max-w-[320px]">
-      <div class="feedback-emoji text-[52px] mb-[10px]" id="fb-emoji">🎉</div>
-      <div class="feedback-title font-['Fredoka_One'] text-[26px] text-[#FFD700] drop-shadow-[2px_2px_0_#8B4500] mb-2" id="fb-title">Incrível!</div>
-      <div class="feedback-msg text-[14px] text-[#FFE0A0] mb-4罩 leading-relaxed whitespace-pre-line" id="fb-msg"></div>
-      <button class="next-btn bg-gradient-to-b from-[#44CC44] to-[#228822] border-3 border-[#006600] rounded-xl p-[10px_28px] font-['Fredoka_One'] text-[17px] text-white cursor-pointer shadow-[0_4px_0_#004400] transition-all duration-150 active:translate-y-[2px] active:shadow-[0_2px_0_#004400] hover:from-[#55DD55] hover:to-[#33AA33]" id="next-btn" onclick="nextPhase()">
-        PRÓXIMA FASE →
-      </button>
+  <!-- Toast de pontos flutuantes -->
+  <div id="floating-points" class="floating-pts"></div>
+
+  <!-- Toast de conquista -->
+  <div id="ach-toast" class="ach-toast">
+    <span class="ach-toast-icon">🎖️</span>
+    <div>
+      <div class="ach-toast-title">Conquista!</div>
+      <div class="ach-toast-name" id="ach-toast-name">–</div>
     </div>
   </div>
-</div>
 
-<!-- Importação do arquivo de scripts separado -->
-<script src="script.js"></script>
+  <script src="script.js"></script>
 </body>
+
 </html>
