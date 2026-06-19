@@ -106,7 +106,7 @@ const phases = [
     title: "Preencha exatamente 2/3 do túnel!",
     target: 2/3,
     targetLabel: "2/3",
-    slots: 6,
+    slots: 5,
     pieces: [
       {n:1,d:3,val:1/3},
       {n:1,d:3,val:1/3},
@@ -232,6 +232,8 @@ let maxCombo = 1;
 let starsTotal = 0;
 let phaseStars = Array(phases.length).fill(0);
 let phaseCompleted = Array(phases.length).fill(false);
+let hintActive = false;
+let hintUsed = false;
 
 // Relacionados ao Timer
 let timerVal = 0;
@@ -490,6 +492,7 @@ function initGamePhase(phase) {
   // Configurar Informações Gerais
   document.getElementById('hud-phase-label').textContent = `FASE ${currentPhaseIndex + 1}`;
   document.getElementById('hud-phase-title').textContent = phase.title;
+  document.getElementById('hud-target-fraction').textContent = phase.targetLabel;
   document.getElementById('prog-target').textContent = phase.targetLabel;
   document.getElementById('hud-score').textContent = score;
 
@@ -504,6 +507,10 @@ function initGamePhase(phase) {
   tunnelPieces = [];
   usedPieceIndices.clear();
   selectedPieceIndex = null;
+  hintActive = false;
+  hintUsed = false;
+  updateHintUI();
+  updateHintButtonState();
 
   renderTunnel();
   renderInventory();
@@ -534,6 +541,9 @@ function renderInventory() {
   const el = document.getElementById('inventory-slots');
   el.innerHTML = '';
 
+  // Encontra a peça recomendada pela dica
+  const hintIdx = hintActive ? findHintPieceIndex() : null;
+
   phase.pieces.forEach((piece, i) => {
     const div = document.createElement('div');
     div.className = 'inv-piece';
@@ -542,6 +552,15 @@ function renderInventory() {
       div.classList.add('used');
     } else if (selectedPieceIndex === i) {
       div.classList.add('selected');
+    }
+
+    // Aplica classes de destaque ou escurecimento da dica
+    if (hintActive && !usedPieceIndices.has(i)) {
+      if (i === hintIdx) {
+        div.classList.add('hint-focus');
+      } else {
+        div.classList.add('hint-dimmed');
+      }
     }
 
     div.innerHTML = `
@@ -735,9 +754,13 @@ function checkAnswer() {
     const basePts = 100;
     const comboBonus = combo * 25;
     const timeBonus = Math.round(timerVal * 1.5);
-    const earnedPts = (basePts + comboBonus + timeBonus) * earnedStars;
+    let finalPts = (basePts + comboBonus + timeBonus) * earnedStars;
 
-    score += earnedPts;
+    if (hintUsed) {
+      finalPts = Math.max(10, Math.round(finalPts * 0.5));
+    }
+
+    score += finalPts;
     
     // Animação de XP
     const earnedXp = 40 + (earnedStars * 15);
@@ -761,7 +784,11 @@ function checkAnswer() {
       <span class="star-anim">★</span>
     `;
     
-    document.getElementById('points-gained').textContent = `+${earnedPts} Pontos  |  +${earnedXp} XP`;
+    let ptsText = `+${finalPts} Pontos`;
+    if (hintUsed) {
+      ptsText += ` (Dica Usada)`;
+    }
+    document.getElementById('points-gained').textContent = `${ptsText}  |  +${earnedXp} XP`;
 
     // Gatilho de Conquistas
     checkAchievements(earnedStars, timePctRemaining);
@@ -791,6 +818,7 @@ function checkAnswer() {
 
     lives--;
     renderLives();
+    updateHintButtonState();
 
     // Quebra o combo
     combo = 1;
@@ -1130,3 +1158,149 @@ document.body.addEventListener('click', () => {
     audioCtx.resume();
   }
 }, { once: true });
+
+// ==========================================
+// SISTEMA DE DICA PROGRESSIVA
+// ==========================================
+function updateHintUI() {
+  const track = document.querySelector('.progress-track');
+  const labelTop = document.querySelector('.progress-label-top');
+  
+  if (track) {
+    if (hintActive) {
+      track.style.display = 'block';
+      if (labelTop) labelTop.style.display = 'block';
+    } else {
+      track.style.display = 'none';
+      if (labelTop) labelTop.style.display = 'none';
+    }
+  }
+}
+
+function updateHintButtonState() {
+  const btnHint = document.getElementById('btn-hint');
+  if (!btnHint) return;
+  
+  const livesSpent = 3 - lives;
+  if (livesSpent >= 1) {
+    btnHint.disabled = false;
+    btnHint.classList.remove('locked');
+    btnHint.innerHTML = `<span class="hint-question">?</span> USAR DICA`;
+  } else {
+    btnHint.disabled = true;
+    btnHint.classList.add('locked');
+    btnHint.innerHTML = `🔒 BLOQUEADO (Erre 1 vez para liberar)`;
+    if (hintActive) {
+      hintActive = false;
+      updateHintUI();
+      renderInventory();
+    }
+  }
+}
+
+function toggleHint() {
+  if (hintActive) {
+    hintActive = false;
+    setSilasDialog(phases[currentPhaseIndex].dialog || "Silas: Vamos resolver esta fração!");
+  } else {
+    hintActive = true;
+    hintUsed = true;
+    playSound('select');
+    
+    // Encontra a peça correta
+    const hintIdx = findHintPieceIndex();
+    if (hintIdx !== null) {
+      const piece = phases[currentPhaseIndex].pieces[hintIdx];
+      setSilasDialog(`Silas: A peça em destaque (${piece.n}/${piece.d}) é perfeita para a solução!`);
+    } else {
+      setSilasDialog(`Silas: O túnel atual não pode ser completado com as peças restantes. Use o Lixo 🗑️ para recomeçar!`);
+    }
+  }
+  updateHintUI();
+  renderInventory();
+}
+
+function findHintPieceIndex() {
+  const phase = phases[currentPhaseIndex];
+  if (!phase || phase.isQuiz) return null;
+  
+  // Calcula o valor atualmente colocado no túnel
+  let currentVal = 0;
+  for (let i = 0; i < phase.slots; i++) {
+    if (tunnelPieces[i]) {
+      currentVal += tunnelPieces[i].val;
+    }
+  }
+  
+  const neededVal = phase.target - currentVal;
+  if (neededVal <= 0.001) return null; // Já preenchido ou excedido
+  
+  // Encontra os índices das peças que ainda não foram usadas
+  const unusedIndices = [];
+  phase.pieces.forEach((p, idx) => {
+    if (!usedPieceIndices.has(idx)) {
+      unusedIndices.push(idx);
+    }
+  });
+  
+  // Busca um subconjunto de peças não usadas que somam exatamente neededVal
+  const n = unusedIndices.length;
+  let bestSubset = null;
+  
+  for (let i = 1; i < (1 << n); i++) {
+    let sum = 0;
+    const subset = [];
+    for (let j = 0; j < n; j++) {
+      if ((i & (1 << j)) !== 0) {
+        const idx = unusedIndices[j];
+        sum += phase.pieces[idx].val;
+        subset.push(idx);
+      }
+    }
+    if (Math.abs(sum - neededVal) < 0.005) {
+      bestSubset = subset;
+      break;
+    }
+  }
+  
+  if (bestSubset && bestSubset.length > 0) {
+    // Prioriza peça 2/6 se estiver na fase 6 e no subset para destacar especificamente a peça 2/6 conforme o prompt
+    const priorityIndex = bestSubset.find(idx => {
+      const p = phase.pieces[idx];
+      return p.n === 2 && p.d === 6;
+    });
+    if (priorityIndex !== undefined) return priorityIndex;
+    
+    return bestSubset[0];
+  }
+  
+  // Se não houver subconjunto a partir do progresso atual, busca do zero para indicar uma peça inicial viável
+  let scratchSubset = null;
+  for (let i = 1; i < (1 << phase.pieces.length); i++) {
+    let sum = 0;
+    const subset = [];
+    for (let j = 0; j < phase.pieces.length; j++) {
+      if ((i & (1 << j)) !== 0) {
+        sum += phase.pieces[j].val;
+        subset.push(j);
+      }
+    }
+    if (Math.abs(sum - phase.target) < 0.005) {
+      scratchSubset = subset;
+      break;
+    }
+  }
+  
+  if (scratchSubset && scratchSubset.length > 0) {
+    const unusedInScratch = scratchSubset.find(idx => !usedPieceIndices.has(idx));
+    if (unusedInScratch !== undefined) return unusedInScratch;
+    return scratchSubset[0];
+  }
+  
+  return null;
+}
+
+// Inicialização — começa na tela de introdução
+window.addEventListener('DOMContentLoaded', () => {
+  showScreen('screen-intro');
+});

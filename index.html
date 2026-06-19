@@ -18,7 +18,7 @@
   <canvas id="particle-canvas"></canvas>
 
   <!-- ===================== TELA 1: INTRO ===================== -->
-  <div id="screen-intro" class="screen active">
+  <div id="screen-intro" class="screen">
     <div class="intro-bg">
       <div class="star-field" id="star-field"></div>
       <div class="ground-strip"></div>
@@ -98,7 +98,13 @@
       <button class="btn-back-sm" onclick="goToMap()">← Mapa</button>
       <div class="hud-center">
         <div class="phase-label" id="hud-phase-label">FASE 1</div>
-        <div class="phase-title-txt" id="hud-phase-title">Preencha 3/4 do túnel!</div>
+        <div class="phase-target-badge-wrap">
+          <span class="phase-title-txt" id="hud-phase-title">Preencha 3/4 do túnel!</span>
+          <div class="phase-target-badge" id="hud-phase-target-badge">
+            <span class="badge-label">OBJETIVO:</span>
+            <span class="badge-val" id="hud-target-fraction">3/4</span>
+          </div>
+        </div>
       </div>
       <div class="hud-right">
         <div class="lives-row" id="lives-row"></div>
@@ -127,10 +133,17 @@
         </div>
       </div>
 
-      <!-- Barra de Progresso do Túnel -->
+      <!-- Barra de Progresso/Dica do Túnel -->
       <div class="progress-section">
-        <div class="progress-label-top">
-          Progresso: <span id="prog-fraction">0</span> / <span class="prog-target" id="prog-target">3/4</span>
+        <div class="progress-header-row">
+          <div class="progress-label-top">
+            DICA PROGRESSIVA (Menos Pontos ao Usar)
+            <span id="prog-fraction" style="display:none">0</span>
+            <span class="prog-target" id="prog-target" style="display:none">3/4</span>
+          </div>
+          <button class="btn-hint" id="btn-hint" onclick="toggleHint()">
+            <span class="hint-question">?</span> USAR DICA
+          </button>
         </div>
         <div class="progress-track">
           <div class="progress-fill" id="progress-fill" style="width:0%">
