@@ -846,8 +846,19 @@ function handleTimeout() {
 }
 
 function resetPhase() {
-  document.getElementById('overlay-fail').classList.remove('show');
-  document.getElementById('overlay-timeout').classList.remove('show');
+  const overlayFail = document.getElementById('overlay-fail');
+  const overlayTimeout = document.getElementById('overlay-timeout');
+  
+  if (overlayFail) overlayFail.classList.remove('show');
+  if (overlayTimeout) overlayTimeout.classList.remove('show');
+  
+  const mascot = document.getElementById('mascot-game');
+  if (mascot) mascot.className = 'mascot-game';
+  
+  // Garante que a tela do jogo está visível
+  showScreen('screen-game');
+  
+  // Reseta a fase
   initGamePhase(phases[currentPhaseIndex]);
 }
 
